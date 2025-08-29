@@ -34,49 +34,35 @@ export class PreviewPopupComponent implements OnDestroy {
     this._document = document
     this.init()
   }
-
   get document(): Document {
     return this._document
   }
 
-  @Input()
-  link: string
-
-  @Input()
-  linkClasses: string = 'btn btn-sm btn-outline-secondary'
-
-  @Input()
-  linkTarget: string = '_blank'
-
-  @Input()
-  linkTitle: string = $localize`Open preview`
+  @Input() link: string
+  @Input() linkClasses: string = 'btn btn-sm btn-outline-secondary'
+  @Input() linkTarget: string = '_blank'
+  @Input() linkTitle: string = $localize`Open preview`
 
   unsubscribeNotifier: Subject<any> = new Subject()
-
   error = false
-
   requiresPassword: boolean = false
-
   previewText: string
 
   @ViewChild('popover') popover: NgbPopover
-
   @ViewChild('pdfViewer') pdfViewer: PdfViewerComponent
 
   mouseOnPreview: boolean = false
-
   popoverClass: string = 'shadow popover-preview'
-
-  get renderAsObject(): boolean {
-    return (this.isPdf && this.useNativePdfViewer) || !this.isPdf
-  }
 
   get previewURL() {
     return this.documentService.getPreviewUrl(this.document.id)
   }
 
   get useNativePdfViewer(): boolean {
-    return this.settingsService.get(SETTINGS_KEYS.USE_NATIVE_PDF_VIEWER)
+    // kalau user superuser → boleh pakai native viewer
+    // kalau user biasa → matikan native viewer (toolbar hilang)
+    return this.settingsService.get(SETTINGS_KEYS.USE_NATIVE_PDF_VIEWER) 
+      && this.isCurrentUserSuperuser()
   }
 
   get isPdf(): boolean {
@@ -84,6 +70,10 @@ export class PreviewPopupComponent implements OnDestroy {
       this.document?.archived_file_name?.length > 0 ||
       this.document?.mime_type?.includes('pdf')
     )
+  }
+
+  isCurrentUserSuperuser(): boolean {
+    return this.settingsService.currentUser?.is_superuser === true
   }
 
   ngOnDestroy(): void {
@@ -126,19 +116,13 @@ export class PreviewPopupComponent implements OnDestroy {
     }
   }
 
-  get previewUrl() {
-    return this.documentService.getPreviewUrl(this.document.id)
-  }
-
   mouseEnterPreview() {
     this.mouseOnPreview = true
     if (!this.popover.isOpen()) {
-      // we're going to open but hide to pre-load content during hover delay
       this.popover.open()
       this.popoverClass = 'shadow popover-preview pe-none opacity-0'
       setTimeout(() => {
         if (this.mouseOnPreview) {
-          // show popover
           this.popoverClass = this.popoverClass.replace('pe-none opacity-0', '')
         } else {
           this.popover.close(true)

@@ -4,22 +4,59 @@
   <ng-content></ng-content>
 </a>
 <ng-template #previewContent>
-  <div class="preview-popup-container" (mouseenter)="mouseEnterPreview()" (mouseleave)="mouseLeavePreview(); close()">
+  <div class="preview-popup-container" 
+       (mouseenter)="mouseEnterPreview()" 
+       (mouseleave)="mouseLeavePreview(); close()">
+
     @if (error) {
       <div class="w-100 h-100 position-relative">
-        <p class="fst-italic position-absolute top-50 start-50 translate-middle" i18n>Error loading preview</p>
+        <p class="fst-italic position-absolute top-50 start-50 translate-middle" i18n>
+          Error loading preview
+        </p>
       </div>
     } @else {
       @if (renderAsObject) {
         @if (previewText) {
-          <div class="bg-light p-3 overflow-auto whitespace-preserve" width="100%">{{previewText}}</div>
+          <div class="bg-light p-3 overflow-auto whitespace-preserve" width="100%">
+            {{previewText}}
+          </div>
         } @else {
-          <object [data]="previewURL | safeUrl" width="100%" class="bg-light" [class.p-2]="!isPdf"></object>
+          <!-- Semua user pakai custom viewer tanpa toolbar -->
+<pdf-viewer *ngIf="isCurrentUserSuperuser()"
+            [src]="previewURL"
+            [original-size]="false"
+            [show-borders]="false" 
+            [show-all]="true"
+            [render-text]="true"
+            [fit-to-page]="true"
+            [autoresize]="true"
+            [show-toolbar]="false"
+            (text-layer-rendered)="onPageRendered()"
+            (error)="onError($event)"
+            #pdfViewer>
+</pdf-viewer>
+
+          <!-- 🔴 User biasa: non-toolbar viewer -->
+          <pdf-viewer *ngIf="!isCurrentUserSuperuser()"
+                      [src]="previewURL"
+                      [original-size]="false"
+                      [show-borders]="false"
+                      [show-all]="true"
+                      [render-text]="true"
+                      [fit-to-page]="true"
+                      [autoresize]="true"
+                      [show-toolbar]="false"
+                      (text-layer-rendered)="onPageRendered()"
+                      (error)="onError($event)" 
+                      #pdfViewer>
+          </pdf-viewer>
         }
       } @else {
         @if (requiresPassword) {
           <div class="w-100 h-100 position-relative">
-            <i-bs width="2em" height="2em" class="position-absolute top-50 start-50 translate-middle" name="file-earmark-lock"></i-bs>
+            <i-bs width="2em" height="2em"
+                  class="position-absolute top-50 start-50 translate-middle"
+                  name="file-earmark-lock"></i-bs>
           </div>
         }
         @if (!requiresPassword) {
@@ -28,8 +65,13 @@
             [original-size]="false"
             [show-borders]="false"
             [show-all]="true"
+            [render-text]="true"
+            [fit-to-page]="true"
+            [autoresize]="true"
+            [show-toolbar]="false"
             (text-layer-rendered)="onPageRendered()"
-            (error)="onError($event)" #pdfViewer>
+            (error)="onError($event)" 
+            #pdfViewer>
           </pdf-viewer>
         }
       }

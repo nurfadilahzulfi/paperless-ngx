@@ -44,6 +44,26 @@ class PaperlessAdminPermissions(BasePermission):
         return request.user.is_staff
 
 
+# 🔹 Tambahan khusus untuk kontrol akses Dokumen
+class PaperlessDocumentPermissions(BasePermission):
+    """
+    Hanya superuser yang boleh melakukan view detail dokumen & download dokumen.
+    User biasa tetap bisa list dokumen (GET /documents/).
+    """
+
+    def has_permission(self, request, view):
+        # List dokumen (GET /documents/) tetap boleh untuk semua user
+        if view.action == "list":
+            return True
+
+        # Retrieve & download hanya boleh superuser
+        if view.action in ["retrieve", "download"]:
+            return request.user.is_superuser
+
+        # Aksi lain (create, update, delete) ikuti rules biasa
+        return True
+
+
 def get_groups_with_only_permission(obj, codename):
     ctype = ContentType.objects.get_for_model(obj)
     permission = Permission.objects.get(content_type=ctype, codename=codename)

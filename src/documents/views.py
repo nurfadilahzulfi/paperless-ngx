@@ -131,9 +131,12 @@ from documents.models import WorkflowAction
 from documents.models import WorkflowTrigger
 from documents.parsers import get_parser_class_for_mime_type
 from documents.parsers import parse_date_generator
-from documents.permissions import PaperlessAdminPermissions
-from documents.permissions import PaperlessNotePermissions
-from documents.permissions import PaperlessObjectPermissions
+from documents.permissions import (
+    PaperlessAdminPermissions,
+    PaperlessNotePermissions,
+    PaperlessObjectPermissions,
+    PaperlessDocumentPermissions,  # 🔹 custom permission
+)
 from documents.permissions import get_objects_for_user_owner_aware
 from documents.permissions import has_perms_owner_aware
 from documents.permissions import set_permissions_for_object
@@ -184,6 +187,7 @@ from paperless_mail.models import MailRule
 from paperless_mail.oauth import PaperlessMailOAuth2Manager
 from paperless_mail.serialisers import MailAccountSerializer
 from paperless_mail.serialisers import MailRuleSerializer
+
 
 if settings.AUDIT_LOG_ENABLED:
     from auditlog.models import LogEntry
@@ -358,7 +362,6 @@ class DocumentTypeViewSet(ModelViewSet, PermissionsAwareDocumentCountMixin):
     )
     filterset_class = DocumentTypeFilterSet
     ordering_fields = ("name", "matching_algorithm", "match", "document_count")
-
 
 @extend_schema_view(
     retrieve=extend_schema(
@@ -562,7 +565,23 @@ class DocumentViewSet(
     queryset = Document.objects.annotate(num_notes=Count("notes"))
     serializer_class = DocumentSerializer
     pagination_class = StandardPagination
-    permission_classes = (IsAuthenticated, PaperlessObjectPermissions)
+    # 🔹 ganti permission default
+    permission_classes = (IsAuthenticated, PaperlessDocumentPermissions)
+    
+    # 🔹 Tambahan blokir untuk download (kalau ada custom action download)
+    @action(detail=True, methods=["get"])
+    def download(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Anda tidak memiliki akses untuk download dokumen ini.")
+        return super().download(request, *args, **kwargs)
+    
+    # 🔹 Tambahan blokir untuk download (kalau ada custom action preview)
+    @action(detail=True, methods=["get"])
+    def preview(self, request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Anda tidak memiliki akses untuk download dokumen ini.")
+        return super().preview(request, *args, **kwargs)
+
     filter_backends = (
         DjangoFilterBackend,
         SearchFilter,

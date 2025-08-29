@@ -137,4 +137,9 @@ export class DocumentCardSmallComponent
   get notesEnabled(): boolean {
     return this.settingsService.get(SETTINGS_KEYS.NOTES_ENABLED)
   }
+
+  // ✅ cek superuser dari currentUser di SettingsService
+  isCurrentUserSuperuser(): boolean {
+    return this.settingsService.currentUser?.is_superuser === true
+  }
 }

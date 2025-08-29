@@ -14,7 +14,8 @@ import {
   NgbTooltipModule,
 } from '@ng-bootstrap/ng-bootstrap'
 import { NgxBootstrapIconsModule } from 'ngx-bootstrap-icons'
-import { delay, of } from 'rxjs'
+import { of } from 'rxjs'
+import { delay } from 'rxjs/operators'
 import {
   DEFAULT_DISPLAY_FIELDS,
   DisplayField,
@@ -69,43 +70,12 @@ export class DocumentCardLargeComponent
   DisplayField = DisplayField
 
   @Input()
-  selected = false
-
-  @Input()
-  displayFields: string[] = DEFAULT_DISPLAY_FIELDS.map((f) => f.id)
-
-  @Output()
-  toggleSelected = new EventEmitter()
-
-  get selectable() {
-    return this.toggleSelected.observers.length > 0
-  }
-
-  @Input()
   document: Document
 
   @Output()
-  dblClickDocument = new EventEmitter()
-
-  @Output()
-  clickTag = new EventEmitter<number>()
-
-  @Output()
-  clickCorrespondent = new EventEmitter<number>()
-
-  @Output()
-  clickDocumentType = new EventEmitter<number>()
-
-  @Output()
-  clickStoragePath = new EventEmitter<number>()
-
-  @Output()
-  clickMoreLike = new EventEmitter()
+  clickMoreLike = new EventEmitter<void>()
 
   @ViewChild('popupPreview') popupPreview: PreviewPopupComponent
-
-  mouseOnPreview = false
-  popoverHidden = true
 
   ngAfterViewInit(): void {
     of(true)
@@ -115,57 +85,12 @@ export class DocumentCardLargeComponent
       })
   }
 
-  get searchScoreClass() {
-    if (this.document.__search_hit__) {
-      if (this.document.__search_hit__.score > 0.7) {
-        return 'success'
-      } else if (this.document.__search_hit__.score > 0.3) {
-        return 'warning'
-      } else {
-        return 'danger'
-      }
-    }
-  }
-
-  get searchNoteHighlights() {
-    let highlights = []
-    if (
-      this.document['__search_hit__'] &&
-      this.document['__search_hit__'].note_highlights
-    ) {
-      // only show notes with a match
-      highlights = (this.document['__search_hit__'].note_highlights as string)
-        .split(',')
-        .filter((highlight) => highlight.includes('<span'))
-    }
-    return highlights
-  }
-
-  getIsThumbInverted() {
-    return this.settingsService.get(SETTINGS_KEYS.DARK_MODE_THUMB_INVERTED)
-  }
-
-  getThumbUrl() {
-    return this.documentService.getThumbUrl(this.document.id)
-  }
-
   getDownloadUrl() {
     return this.documentService.getDownloadUrl(this.document.id)
   }
 
-  mouseLeaveCard() {
-    this.popupPreview?.close()
-  }
-
-  get contentTrimmed() {
-    return (
-      this.document.content.substring(0, 500) +
-      (this.document.content.length > 500 ? '...' : '')
-    )
-  }
-
-  get notesEnabled(): boolean {
-    return this.settingsService.get(SETTINGS_KEYS.NOTES_ENABLED)
+  // ✅ Tambahan fungsi cek superuser
+  isCurrentUserSuperuser(): boolean {
+    return this.settingsService.currentUser?.is_superuser === true
   }
 }
-
