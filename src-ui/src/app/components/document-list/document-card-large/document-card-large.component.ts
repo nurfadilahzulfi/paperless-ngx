@@ -37,6 +37,7 @@ import { PreviewPopupComponent } from '../../common/preview-popup/preview-popup.
 import { TagComponent } from '../../common/tag/tag.component'
 import { LoadingComponentWithPermissions } from '../../loading-component/loading.component'
 
+
 @Component({
   selector: 'pngx-document-card-large',
   templateUrl: './document-card-large.component.html',

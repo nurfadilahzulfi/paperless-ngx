@@ -67,27 +67,27 @@
             @if (document) {
               <a class="btn btn-sm btn-outline-secondary" (click)="clickMoreLike.emit()">
                 <i-bs name="diagram-3"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>More like this</span>
-              </a>  
+              </a>
               <a routerLink="/documents/{{document.id}}" class="btn btn-sm btn-outline-secondary" *pngxIfPermissions="{ action: PermissionAction.Change, type: PermissionType.Document }">
                 <i-bs name="file-earmark-richtext"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>Open</span>
               </a>
 
-          <!-- VIEW BUTTON - hanya untuk superuser -->
-           <pngx-preview-popup *ngIf="isCurrentUserSuperuser()" [document]="document" #popupPreview>
-            <i-bs name="eye"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>View</span>
-          </pngx-preview-popup>
-          <!-- DOWNLOAD BUTTON - hanya untuk superuser -->
-           <a *ngIf="isCurrentUserSuperuser()" class="btn btn-sm btn-outline-secondary" [href]="getDownloadUrl()">
-            <i-bs name="download"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>Download</span>
-          </a>
-        } @else {
-          <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-          <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-          <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-          <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-        }
-      </div>
+              <!-- 🔹 View hanya untuk superuser -->
+              <pngx-preview-popup *ngIf="isCurrentUserSuperuser()" [document]="document" #popupPreview>
+                <i-bs name="eye"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>View</span>
+              </pngx-preview-popup>
 
+              <!-- 🔹 Download hanya untuk superuser -->
+              <a *ngIf="isCurrentUserSuperuser()" class="btn btn-sm btn-outline-secondary" [href]="getDownloadUrl()">
+                <i-bs name="download"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>Download</span>
+              </a>
+            } @else {
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+            }
+          </div>
 
           <div class="list-group list-group-horizontal border-0 card-info ms-md-auto mt-2 mt-md-0">
             @if (document) {

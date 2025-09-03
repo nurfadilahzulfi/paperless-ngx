@@ -1,0 +1,9 @@
+version: "3.4"
+
+services:
+  webserver:
+    build:
+      context: ../../   # arahkan ke root repo hasil clone
+    volumes:
+      - ../../src:/usr/src/paperless/src        # backend Django
+      - ../../src-ui:/usr/src/paperless/src-ui  # frontend Angular

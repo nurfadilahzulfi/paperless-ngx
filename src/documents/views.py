@@ -63,6 +63,7 @@ from rest_framework import parsers
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView
@@ -565,23 +566,75 @@ class DocumentViewSet(
     queryset = Document.objects.annotate(num_notes=Count("notes"))
     serializer_class = DocumentSerializer
     pagination_class = StandardPagination
-    # 🔹 ganti permission default
     permission_classes = (IsAuthenticated, PaperlessDocumentPermissions)
-    
-    # 🔹 Tambahan blokir untuk download (kalau ada custom action download)
-    @action(detail=True, methods=["get"])
-    def download(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            raise PermissionDenied("Anda tidak memiliki akses untuk download dokumen ini.")
-        return super().download(request, *args, **kwargs)
-    
-    # 🔹 Tambahan blokir untuk download (kalau ada custom action preview)
-    @action(detail=True, methods=["get"])
-    def preview(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
-            raise PermissionDenied("Anda tidak memiliki akses untuk download dokumen ini.")
-        return super().preview(request, *args, **kwargs)
 
+    filter_backends = (
+        DjangoFilterBackend,
+        SearchFilter,
+        DocumentsOrderingFilter,
+        ObjectOwnedOrGrantedPermissionsFilter,
+    )
+    filterset_class = DocumentFilterSet
+    search_fields = ("title", "correspondent__name", "content")
+    ordering_fields = (
+        "id",
+        "title",
+        "correspondent__name",
+        "document_type__name",
+        "created",
+        "modified",
+        "added",
+        "archive_serial_number",
+        "num_notes",
+        "owner",
+        "page_count",
+        "custom_field_",
+    )
+
+    def get_queryset(self):
+        return (
+            Document.objects.distinct()
+            .order_by("-created")
+            .annotate(num_notes=Count("notes"))
+            .select_related("correspondent", "storage_path", "document_type", "owner")
+            .prefetch_related("tags", "custom_fields", "notes")
+        )
+
+    # 🔹 Blokir preview untuk non-superuser
+    @action(methods=["get"], detail=True, filter_backends=[])
+    @method_decorator(cache_control(no_cache=True))
+    @method_decorator(
+        condition(etag_func=preview_etag, last_modified_func=preview_last_modified),
+    )
+    def preview(self, request, pk=None):
+        if not request.user.is_superuser:
+            return HttpResponseForbidden("Hanya superuser yang boleh preview dokumen.")
+        try:
+            return self.file_response(pk, request, "inline")
+        except (FileNotFoundError, Document.DoesNotExist):
+            raise Http404
+
+    # 🔹 Blokir download untuk non-superuser
+    @action(methods=["get"], detail=True)
+    def download(self, request, pk=None):
+        if not request.user.is_superuser:
+            return HttpResponseForbidden("Hanya superuser yang boleh download dokumen.")
+        try:
+            return self.file_response(pk, request, "attachment")
+        except (FileNotFoundError, Document.DoesNotExist):
+            raise Http404
+
+    # 🔹 Tambahan check di file_response
+    def file_response(self, pk, request, disposition):
+        doc = Document.global_objects.select_related("owner").get(id=pk)
+        if not request.user.is_superuser:
+            return HttpResponseForbidden("Hanya superuser yang boleh akses dokumen ini.")
+        return serve_file(
+            doc=doc,
+            use_archive=not self.original_requested(request)
+            and doc.has_archive_version,
+            disposition=disposition,
+        )
     filter_backends = (
         DjangoFilterBackend,
         SearchFilter,
@@ -2098,6 +2151,10 @@ class BulkDownloadView(GenericAPIView):
     parser_classes = (parsers.JSONParser,)
 
     def post(self, request, format=None):
+        # 🔹 Hanya superuser yang boleh bulk download
+        if not request.user.is_superuser:
+            return HttpResponseForbidden("Hanya superuser yang boleh bulk download dokumen.")
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -2107,12 +2164,8 @@ class BulkDownloadView(GenericAPIView):
         content = serializer.validated_data.get("content")
         follow_filename_format = serializer.validated_data.get("follow_formatting")
 
-        for document in documents:
-            if not has_perms_owner_aware(request.user, "view_document", document):
-                return HttpResponseForbidden("Insufficient permissions")
-
         settings.SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
-        temp = tempfile.NamedTemporaryFile(  # noqa: SIM115
+        temp = tempfile.NamedTemporaryFile(
             dir=settings.SCRATCH_DIR,
             suffix="-compressed-archive",
             delete=False,
@@ -2130,14 +2183,12 @@ class BulkDownloadView(GenericAPIView):
             for document in documents:
                 strategy.add_document(document)
 
-        # TODO(stumpylog): Investigate using FileResponse here
         with Path(temp.name).open("rb") as f:
             response = HttpResponse(f, content_type="application/zip")
             response["Content-Disposition"] = '{}; filename="{}"'.format(
                 "attachment",
                 "documents.zip",
             )
-
             return response
 
 
