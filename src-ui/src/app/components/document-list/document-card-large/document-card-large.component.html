@@ -64,45 +64,27 @@
 
         <div class="d-flex flex-column flex-md-row align-items-md-center">
           <div class="btn-group">
-          @if (document) {
-            <!-- 🔎 More like this -->
-            <a class="btn btn-sm btn-outline-secondary" (click)="clickMoreLike.emit()">
-              <i-bs name="diagram-3"></i-bs>&nbsp;
-              <span class="d-none d-md-inline" i18n>More like this</span>
-            </a>
+            @if (document) {
+              <a class="btn btn-sm btn-outline-secondary" (click)="clickMoreLike.emit()">
+                <i-bs name="diagram-3"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>More like this</span>
+              </a>
+              <a routerLink="/documents/{{document.id}}" class="btn btn-sm btn-outline-secondary" *pngxIfPermissions="{ action: PermissionAction.Change, type: PermissionType.Document }">
+                <i-bs name="file-earmark-richtext"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>Open</span>
+              </a>
+              <pngx-preview-popup [document]="document" #popupPreview>
+                <i-bs name="eye"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>View</span>
+              </pngx-preview-popup>
+              <a class="btn btn-sm btn-outline-secondary" [href]="getDownloadUrl()">
+                <i-bs name="download"></i-bs>&nbsp;<span class="d-none d-md-inline" i18n>Download</span>
+              </a>
+            } @else {
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+              <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
+            }
+          </div>
 
-            <!-- 📂 Open (sesuai permission) -->
-            <a routerLink="/documents/{{document.id}}"
-              class="btn btn-sm btn-outline-secondary"
-              *pngxIfPermissions="{ action: PermissionAction.Change, type: PermissionType.Document }">
-              <i-bs name="file-earmark-richtext"></i-bs>&nbsp;
-              <span class="d-none d-md-inline" i18n>Open</span>
-            </a>
-
-            <!-- 👁 View: disable untuk user biasa -->
-            <button class="btn btn-sm btn-outline-secondary"
-                    [disabled]="!isCurrentUserSuperuser()"
-                    (click)="isCurrentUserSuperuser() && popupPreview.open()">
-              <i-bs name="eye"></i-bs>&nbsp;
-              <span class="d-none d-md-inline" i18n>View</span>
-            </button>
-
-            <!-- ⬇ Download: disable untuk user biasa -->
-            <a class="btn btn-sm btn-outline-secondary"
-              [href]="isCurrentUserSuperuser() ? getDownloadUrl() : null"
-              [class.disabled]="!isCurrentUserSuperuser()"
-              [attr.tabindex]="!isCurrentUserSuperuser() ? -1 : null"
-              (click)="!isCurrentUserSuperuser() ? $event.preventDefault() : null">
-              <i-bs name="download"></i-bs>&nbsp;
-              <span class="d-none d-md-inline" i18n>Download</span>
-            </a>
-          } @else {
-            <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-            <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-            <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-            <div class="placeholder btn btn-sm btn-outline-secondary bg-secondary" style="width: 60px;">&nbsp;</div>
-          }
-        </div>
           <div class="list-group list-group-horizontal border-0 card-info ms-md-auto mt-2 mt-md-0">
             @if (document) {
               @if (displayFields.includes(DisplayField.NOTES) && notesEnabled && document.notes.length) {

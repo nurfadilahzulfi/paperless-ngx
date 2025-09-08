@@ -140,26 +140,13 @@
       <div class="d-flex justify-content-between align-items-center">
         <div class="btn-group w-100">
           @if (document) {
-            <!-- 📂 Open (sesuai permission normal) -->
-            <a routerLink="/documents/{{document.id}}"
-              class="btn btn-sm btn-outline-secondary"
-              title="Open" i18n-title
-              *pngxIfPermissions="{ action: PermissionAction.Change, type: PermissionType.Document }">
+            <a routerLink="/documents/{{document.id}}" class="btn btn-sm btn-outline-secondary" title="Open" i18n-title *pngxIfPermissions="{ action: PermissionAction.Change, type: PermissionType.Document }" i18n-title>
               <i-bs name="file-earmark-richtext"></i-bs>
             </a>
-
-            <!-- 👁 View hanya superuser -->
-            <button *ngIf="isCurrentUserSuperuser()"
-                    class="btn btn-sm btn-outline-secondary"
-                    (click)="popupPreview.open()">
+            <pngx-preview-popup [document]="document" #popupPreview>
               <i-bs name="eye"></i-bs>
-            </button>
-
-            <!-- ⬇ Download hanya superuser -->
-            <a *ngIf="isCurrentUserSuperuser()"
-              class="btn btn-sm btn-outline-secondary"
-              [href]="getDownloadUrl()"
-              title="Download" i18n-title>
+            </pngx-preview-popup>
+            <a [href]="getDownloadUrl()" class="btn btn-sm btn-outline-secondary" title="Download" i18n-title (click)="$event.stopPropagation()">
               <i-bs name="download"></i-bs>
             </a>
           } @else {
@@ -168,7 +155,6 @@
             <button class="btn btn-sm btn-outline-secondary placeholder bg-secondary"></button>
           }
         </div>
-      </div>
       </div>
     </div>
   </div>

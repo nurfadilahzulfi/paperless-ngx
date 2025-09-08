@@ -14,8 +14,7 @@ import {
   NgbTooltipModule,
 } from '@ng-bootstrap/ng-bootstrap'
 import { NgxBootstrapIconsModule } from 'ngx-bootstrap-icons'
-import { of } from 'rxjs'
-import { delay } from 'rxjs/operators'
+import { delay, of } from 'rxjs'
 import {
   DEFAULT_DISPLAY_FIELDS,
   DisplayField,
@@ -36,7 +35,6 @@ import { CustomFieldDisplayComponent } from '../../common/custom-field-display/c
 import { PreviewPopupComponent } from '../../common/preview-popup/preview-popup.component'
 import { TagComponent } from '../../common/tag/tag.component'
 import { LoadingComponentWithPermissions } from '../../loading-component/loading.component'
-
 
 @Component({
   selector: 'pngx-document-card-large',
@@ -66,17 +64,48 @@ export class DocumentCardLargeComponent
   implements AfterViewInit
 {
   private documentService = inject(DocumentService)
- settingsService = inject(SettingsService)
+  settingsService = inject(SettingsService)
 
   DisplayField = DisplayField
+
+  @Input()
+  selected = false
+
+  @Input()
+  displayFields: string[] = DEFAULT_DISPLAY_FIELDS.map((f) => f.id)
+
+  @Output()
+  toggleSelected = new EventEmitter()
+
+  get selectable() {
+    return this.toggleSelected.observers.length > 0
+  }
 
   @Input()
   document: Document
 
   @Output()
-  clickMoreLike = new EventEmitter<void>()
+  dblClickDocument = new EventEmitter()
+
+  @Output()
+  clickTag = new EventEmitter<number>()
+
+  @Output()
+  clickCorrespondent = new EventEmitter<number>()
+
+  @Output()
+  clickDocumentType = new EventEmitter<number>()
+
+  @Output()
+  clickStoragePath = new EventEmitter<number>()
+
+  @Output()
+  clickMoreLike = new EventEmitter()
 
   @ViewChild('popupPreview') popupPreview: PreviewPopupComponent
+
+  mouseOnPreview = false
+  popoverHidden = true
 
   ngAfterViewInit(): void {
     of(true)
@@ -86,25 +115,56 @@ export class DocumentCardLargeComponent
       })
   }
 
-  ngOnInit(): void {
-  console.log('Current user:', this.settingsService.currentUser);
-}
+  get searchScoreClass() {
+    if (this.document.__search_hit__) {
+      if (this.document.__search_hit__.score > 0.7) {
+        return 'success'
+      } else if (this.document.__search_hit__.score > 0.3) {
+        return 'warning'
+      } else {
+        return 'danger'
+      }
+    }
+  }
+
+  get searchNoteHighlights() {
+    let highlights = []
+    if (
+      this.document['__search_hit__'] &&
+      this.document['__search_hit__'].note_highlights
+    ) {
+      // only show notes with a match
+      highlights = (this.document['__search_hit__'].note_highlights as string)
+        .split(',')
+        .filter((highlight) => highlight.includes('<span'))
+    }
+    return highlights
+  }
+
+  getIsThumbInverted() {
+    return this.settingsService.get(SETTINGS_KEYS.DARK_MODE_THUMB_INVERTED)
+  }
+
+  getThumbUrl() {
+    return this.documentService.getThumbUrl(this.document.id)
+  }
 
   getDownloadUrl() {
     return this.documentService.getDownloadUrl(this.document.id)
   }
 
- isCurrentUserSuperuser(): boolean {
-    return this.settingsService.currentUser?.is_superuser === true
+  mouseLeaveCard() {
+    this.popupPreview?.close()
   }
 
-  /** ✅ Helper: apakah tombol harus disabled */
-  isButtonDisabled(): boolean {
-    return !this.isCurrentUserSuperuser()
+  get contentTrimmed() {
+    return (
+      this.document.content.substring(0, 500) +
+      (this.document.content.length > 500 ? '...' : '')
+    )
   }
 
-  /** ✅ Helper: URL download (null kalau user biasa) */
-  getSafeDownloadUrl(): string | null {
-    return this.isCurrentUserSuperuser() ? this.getDownloadUrl() : null
+  get notesEnabled(): boolean {
+    return this.settingsService.get(SETTINGS_KEYS.NOTES_ENABLED)
   }
 }

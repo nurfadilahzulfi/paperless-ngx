@@ -205,7 +205,6 @@ export class DocumentDetailComponent
   expandOriginalMetadata = false
   expandArchivedMetadata = false
 
-  currentUser: any
   error: any
 
   networkActive = false
@@ -331,8 +330,6 @@ export class DocumentDetailComponent
   ngOnInit(): void {
     this.setZoom(this.settings.get(SETTINGS_KEYS.PDF_VIEWER_ZOOM_SETTING))
     this.documentForm.valueChanges
-    this.currentUser = this.settings.currentUser
-    console.log("Current user:", this.currentUser)
       .pipe(takeUntil(this.unsubscribeNotifier))
       .subscribe(() => {
         this.error = null

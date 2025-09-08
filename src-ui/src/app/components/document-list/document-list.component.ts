@@ -67,8 +67,6 @@ import { DocumentCardSmallComponent } from './document-card-small/document-card-
 import { FilterEditorComponent } from './filter-editor/filter-editor.component'
 import { SaveViewConfigDialogComponent } from './save-view-config-dialog/save-view-config-dialog.component'
 
-
-
 @Component({
   selector: 'pngx-document-list',
   templateUrl: './document-list.component.html',
@@ -117,8 +115,6 @@ export class DocumentListComponent
   settingsService = inject(SettingsService)
   private hotKeyService = inject(HotKeyService)
   permissionService = inject(PermissionsService)
-
-  currentUser: any
 
   DisplayField = DisplayField
   DisplayMode = DisplayMode
@@ -234,18 +230,7 @@ export class DocumentListComponent
       ?.name
   }
 
-  public canViewDocument(document?: Document): boolean {
-  return this.permissionService.canViewDocument(document)
-}
-
-public canDownloadDocument(document?: Document): boolean {
-  return this.permissionService.canDownloadDocument(document)
-}
-  
-
   ngOnInit(): void {
-    this.currentUser = this.settingsService.currentUser
-    console.log("Current user (list):", this.currentUser)
     this.websocketStatusService
       .onDocumentConsumptionFinished()
       .pipe(takeUntil(this.unsubscribeNotifier))
@@ -503,5 +488,4 @@ public canDownloadDocument(document?: Document): boolean {
   resetFilters() {
     this.filterEditor.resetSelected()
   }
-    
 }

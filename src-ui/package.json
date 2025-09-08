@@ -60,13 +60,12 @@
     "@typescript-eslint/parser": "^8.38.0",
     "@typescript-eslint/utils": "^8.38.0",
     "eslint": "^9.32.0",
-    "jest": "^29.7.0",
-    "jest-environment-jsdom": "^29.7.0",
+    "jest": "30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "jest-junit": "^16.0.0",
-    "jest-preset-angular": "^14.6.0",
+    "jest-preset-angular": "^15.0.0",
     "jest-websocket-mock": "^2.5.0",
     "prettier-plugin-organize-imports": "^4.2.0",
-    "ts-jest": "^29.2.5",
     "ts-node": "~10.9.1",
     "typescript": "^5.8.3",
     "webpack": "^5.101.0"
@@ -77,8 +76,7 @@
       "canvas",
       "esbuild",
       "lmdb",
-      "msgpackr-extract",
-      "unrs-resolver"
+      "msgpackr-extract"
     ]
   }
 }

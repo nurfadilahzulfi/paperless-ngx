@@ -799,21 +799,3 @@ canvas.hiddenCanvasElement {
     display: block;
   }
 }
-
-/* --- Custom rules to hide View & Download buttons --- */
-
-/* Hilangkan tombol dengan aria-label */
-button[aria-label="View"],
-button[aria-label="Download"],
-a[aria-label="View"],
-a[aria-label="Download"] {
-  display: none !important;
-}
-
-/* Hilangkan tombol berdasarkan icon teks */
-.mat-icon[ng-reflect-message="View"],
-.mat-icon[ng-reflect-message="Download"] {
-  display: none !important;
-}
-
-

@@ -1,4 +1,4 @@
-<<pngx-page-header [(title)]="title">
+<pngx-page-header [(title)]="title">
   @if (archiveContentRenderType === ContentRenderType.PDF && !useNativePdfViewer) {
     @if (previewNumPages) {
       <div class="input-group input-group-sm d-none d-md-flex">
@@ -24,12 +24,8 @@
     <i-bs width="1.2em" height="1.2em" name="trash"></i-bs><span class="d-none d-lg-inline ps-1" i18n>Delete</span>
   </button>
 
-  <!-- 🔒 Download hanya superuser -->
   <div class="btn-group">
-    <button *ngIf="currentUser?.is_superuser"
-            (click)="download()"
-            class="btn btn-sm btn-outline-primary"
-            [disabled]="downloading">
+    <button (click)="download()" class="btn btn-sm btn-outline-primary" [disabled]="downloading">
       @if (downloading) {
         <div class="spinner-border spinner-border-sm" role="status"></div>
       } @else {
@@ -39,15 +35,10 @@
     </button>
 
     @if (metadata?.has_archive_version) {
-      <div class="btn-group" ngbDropdown role="group" *ngIf="currentUser?.is_superuser">
-        <button class="btn btn-sm btn-outline-primary dropdown-toggle"
-                [disabled]="downloading"
-                ngbDropdownToggle></button>
+      <div class="btn-group" ngbDropdown role="group">
+        <button class="btn btn-sm btn-outline-primary dropdown-toggle" [disabled]="downloading" ngbDropdownToggle></button>
         <div class="dropdown-menu shadow" ngbDropdownMenu>
-          <button ngbDropdownItem
-                  (click)="download(true)"
-                  [disabled]="downloading"
-                  i18n>Download original</button>
+          <button ngbDropdownItem (click)="download(true)" [disabled]="downloading" i18n>Download original</button>
         </div>
       </div>
     }
@@ -82,6 +73,7 @@
     (added)="addField($event)">
   </pngx-custom-fields-dropdown>
 
+
   <div class="ms-auto" ngbDropdown>
     <button class="btn btn-sm btn-outline-primary" id="sendDropdown" ngbDropdownToggle>
       <i-bs name="send"></i-bs>
@@ -98,6 +90,7 @@
       }
     </div>
   </div>
+
 </pngx-page-header>
 
 <div class="row">
@@ -300,8 +293,7 @@
           </ng-template>
         </li>
 
-        <!-- 🔒 Tab Preview (mobile) hanya superuser -->
-        <li [ngbNavItem]="DocumentDetailNavIDs.Preview" class="d-md-none" *ngIf="currentUser?.is_superuser">
+        <li [ngbNavItem]="DocumentDetailNavIDs.Preview" class="d-md-none">
           <a ngbNavLink i18n>Preview</a>
           @if (!pdfPreview.offsetParent) {
             <ng-template ngbNavContent>
@@ -311,7 +303,6 @@
             </ng-template>
           }
         </li>
-
 
         @if (notesEnabled) {
           <li [ngbNavItem]="DocumentDetailNavIDs.Notes">
@@ -352,13 +343,9 @@
     </form>
   </div>
 
-  <!-- 🔒 Preview hanya superuser -->
   <div class="col-md-6 col-xl-8 mb-3 d-none d-md-block position-relative" #pdfPreview>
-    <ng-container *ngIf="currentUser?.is_superuser">
-      <ng-container *ngTemplateOutlet="previewContent"></ng-container>
-    </ng-container>
+    <ng-container *ngTemplateOutlet="previewContent"></ng-container>
   </div>
-  </div> <!-- penutup .row -->
 
 </div>
 

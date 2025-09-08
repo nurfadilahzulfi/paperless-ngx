@@ -38,46 +38,10 @@ class PaperlessObjectPermissions(DjangoObjectPermissions):
         else:
             return True  # no owner
 
+
 class PaperlessAdminPermissions(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_staff
-
-
-class PaperlessDocumentPermissions(BasePermission):
-    """
-    Aturan akses untuk dokumen:
-    - Superuser: bebas semua (list, retrieve, preview, download, dll).
-    - Staff & user biasa: hanya boleh list dokumen.
-      Tidak bisa retrieve, view detail, preview, atau download.
-    """
-
-    def has_permission(self, request, view):
-        # Hanya superuser yang boleh semua
-        if request.user and request.user.is_superuser:
-            return True
-
-        # List dokumen masih boleh untuk semua user
-        if view.action == "list":
-            return True
-
-        # Non-superuser TIDAK boleh aksi berikut:
-        if view.action in ["retrieve", "download", "preview", "view"]:
-            return False
-
-        # Untuk aksi lain (update/delete/create) → default False
-        return False
-    
-class IsSuperUserForDownload(BasePermission):
-    """
-    Hanya superuser yang bisa download/preview/view dokumen.
-    """
-
-    def has_permission(self, request, view):
-        # endpoint download/preview/view detail
-        if view.action in ["download", "preview", "view", "retrieve"]:
-            return request.user.is_superuser
-        return True
-
 
 
 def get_groups_with_only_permission(obj, codename):
@@ -176,6 +140,7 @@ def get_objects_for_user_owner_aware(user, perms, Model) -> QuerySet:
 def has_perms_owner_aware(user, perms, obj):
     checker = ObjectPermissionChecker(user)
     return obj.owner is None or obj.owner == user or checker.has_perm(perms, obj)
+
 
 class PaperlessNotePermissions(BasePermission):
     """

@@ -63,7 +63,6 @@ from rest_framework import parsers
 from rest_framework import serializers
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import OrderingFilter
 from rest_framework.filters import SearchFilter
 from rest_framework.generics import GenericAPIView
@@ -132,12 +131,9 @@ from documents.models import WorkflowAction
 from documents.models import WorkflowTrigger
 from documents.parsers import get_parser_class_for_mime_type
 from documents.parsers import parse_date_generator
-from documents.permissions import (
-    PaperlessAdminPermissions,
-    PaperlessNotePermissions,
-    PaperlessObjectPermissions,
-    PaperlessDocumentPermissions,  # 🔹 custom permission
-)
+from documents.permissions import PaperlessAdminPermissions
+from documents.permissions import PaperlessNotePermissions
+from documents.permissions import PaperlessObjectPermissions
 from documents.permissions import get_objects_for_user_owner_aware
 from documents.permissions import has_perms_owner_aware
 from documents.permissions import set_permissions_for_object
@@ -188,7 +184,6 @@ from paperless_mail.models import MailRule
 from paperless_mail.oauth import PaperlessMailOAuth2Manager
 from paperless_mail.serialisers import MailAccountSerializer
 from paperless_mail.serialisers import MailRuleSerializer
-
 
 if settings.AUDIT_LOG_ENABLED:
     from auditlog.models import LogEntry
@@ -363,6 +358,7 @@ class DocumentTypeViewSet(ModelViewSet, PermissionsAwareDocumentCountMixin):
     )
     filterset_class = DocumentTypeFilterSet
     ordering_fields = ("name", "matching_algorithm", "match", "document_count")
+
 
 @extend_schema_view(
     retrieve=extend_schema(
@@ -561,82 +557,12 @@ class DocumentViewSet(
     DestroyModelMixin,
     ListModelMixin,
     GenericViewSet,
-    ModelViewSet,
 ):
     model = Document
     queryset = Document.objects.annotate(num_notes=Count("notes"))
     serializer_class = DocumentSerializer
     pagination_class = StandardPagination
-    permission_classes = (IsAuthenticated, PaperlessDocumentPermissions)
-
-    filter_backends = (
-        DjangoFilterBackend,
-        SearchFilter,
-        DocumentsOrderingFilter,
-        ObjectOwnedOrGrantedPermissionsFilter,
-    )
-    filterset_class = DocumentFilterSet
-    search_fields = ("title", "correspondent__name", "content")
-    ordering_fields = (
-        "id",
-        "title",
-        "correspondent__name",
-        "document_type__name",
-        "created",
-        "modified",
-        "added",
-        "archive_serial_number",
-        "num_notes",
-        "owner",
-        "page_count",
-        "custom_field_",
-    )
-
-    def get_queryset(self):
-        return (
-            Document.objects.distinct()
-            .order_by("-created")
-            .annotate(num_notes=Count("notes"))
-            .select_related("correspondent", "storage_path", "document_type", "owner")
-            .prefetch_related("tags", "custom_fields", "notes")
-        )
-
-     # 🔒 Preview hanya untuk superuser
-    @action(methods=["get"], detail=True, filter_backends=[])
-    @method_decorator(cache_control(no_cache=True))
-    @method_decorator(
-        condition(etag_func=preview_etag, last_modified_func=preview_last_modified),
-    )
-    def preview(self, request, pk=None):
-        if not request.user.is_superuser:
-            return HttpResponseForbidden("Hanya superuser yang boleh preview dokumen.")
-        try:
-            return self.file_response(pk, request, "inline")
-        except (FileNotFoundError, Document.DoesNotExist):
-            raise Http404
-
-    # 🔒 Download hanya untuk superuser
-    @action(methods=["get"], detail=True)
-    def download(self, request, pk=None):
-        if not request.user.is_superuser:
-            return HttpResponseForbidden("Hanya superuser yang boleh download dokumen.")
-        try:
-            return self.file_response(pk, request, "attachment")
-        except (FileNotFoundError, Document.DoesNotExist):
-            raise Http404
-
-    # 🔒 file_response juga superuser-only
-    def file_response(self, pk, request, disposition):
-        doc = Document.global_objects.select_related("owner").get(id=pk)
-        if not request.user.is_superuser:
-            return HttpResponseForbidden("Hanya superuser yang boleh akses dokumen ini.")
-        return serve_file(
-            doc=doc,
-            use_archive=not self.original_requested(request)
-            and doc.has_archive_version,
-            disposition=disposition,
-        )
-
+    permission_classes = (IsAuthenticated, PaperlessObjectPermissions)
     filter_backends = (
         DjangoFilterBackend,
         SearchFilter,
@@ -2153,10 +2079,6 @@ class BulkDownloadView(GenericAPIView):
     parser_classes = (parsers.JSONParser,)
 
     def post(self, request, format=None):
-        # 🔹 Hanya superuser yang boleh bulk download
-        if not request.user.is_superuser:
-            return HttpResponseForbidden("Hanya superuser yang boleh bulk download dokumen.")
-
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -2166,8 +2088,12 @@ class BulkDownloadView(GenericAPIView):
         content = serializer.validated_data.get("content")
         follow_filename_format = serializer.validated_data.get("follow_formatting")
 
+        for document in documents:
+            if not has_perms_owner_aware(request.user, "view_document", document):
+                return HttpResponseForbidden("Insufficient permissions")
+
         settings.SCRATCH_DIR.mkdir(parents=True, exist_ok=True)
-        temp = tempfile.NamedTemporaryFile(
+        temp = tempfile.NamedTemporaryFile(  # noqa: SIM115
             dir=settings.SCRATCH_DIR,
             suffix="-compressed-archive",
             delete=False,
@@ -2185,12 +2111,14 @@ class BulkDownloadView(GenericAPIView):
             for document in documents:
                 strategy.add_document(document)
 
+        # TODO(stumpylog): Investigate using FileResponse here
         with Path(temp.name).open("rb") as f:
             response = HttpResponse(f, content_type="application/zip")
             response["Content-Disposition"] = '{}; filename="{}"'.format(
                 "attachment",
                 "documents.zip",
             )
+
             return response
 
 
@@ -2908,11 +2836,6 @@ class SystemStatusView(PassUserMixin):
         last_trained_task = (
             PaperlessTask.objects.filter(
                 task_name=PaperlessTask.TaskName.TRAIN_CLASSIFIER,
-                status__in=[
-                    states.SUCCESS,
-                    states.FAILURE,
-                    states.REVOKED,
-                ],  # ignore running tasks
             )
             .order_by("-date_done")
             .first()
@@ -2922,7 +2845,7 @@ class SystemStatusView(PassUserMixin):
         if last_trained_task is None:
             classifier_status = "WARNING"
             classifier_error = "No classifier training tasks found"
-        elif last_trained_task and last_trained_task.status != states.SUCCESS:
+        elif last_trained_task and last_trained_task.status == states.FAILURE:
             classifier_status = "ERROR"
             classifier_error = last_trained_task.result
         classifier_last_trained = (
@@ -2932,11 +2855,6 @@ class SystemStatusView(PassUserMixin):
         last_sanity_check = (
             PaperlessTask.objects.filter(
                 task_name=PaperlessTask.TaskName.CHECK_SANITY,
-                status__in=[
-                    states.SUCCESS,
-                    states.FAILURE,
-                    states.REVOKED,
-                ],  # ignore running tasks
             )
             .order_by("-date_done")
             .first()
@@ -2946,7 +2864,7 @@ class SystemStatusView(PassUserMixin):
         if last_sanity_check is None:
             sanity_check_status = "WARNING"
             sanity_check_error = "No sanity check tasks found"
-        elif last_sanity_check and last_sanity_check.status != states.SUCCESS:
+        elif last_sanity_check and last_sanity_check.status == states.FAILURE:
             sanity_check_status = "ERROR"
             sanity_check_error = last_sanity_check.result
         sanity_check_last_run = (

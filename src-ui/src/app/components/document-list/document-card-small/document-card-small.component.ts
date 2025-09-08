@@ -107,10 +107,6 @@ export class DocumentCardSmallComponent
         this.show = true
       })
   }
-  ngOnInit(): void {
-  console.log('Current user:', this.settingsService.currentUser);
-}
-
 
   getIsThumbInverted() {
     return this.settingsService.get(SETTINGS_KEYS.DARK_MODE_THUMB_INVERTED)
@@ -140,10 +136,5 @@ export class DocumentCardSmallComponent
 
   get notesEnabled(): boolean {
     return this.settingsService.get(SETTINGS_KEYS.NOTES_ENABLED)
-  }
-
-  // ✅ cek superuser dari currentUser di SettingsService
-  isCurrentUserSuperuser(): boolean {
-    return this.settingsService.currentUser?.is_superuser === true
   }
 }

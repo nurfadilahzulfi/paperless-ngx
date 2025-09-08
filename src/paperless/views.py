@@ -427,23 +427,3 @@ class SocialAccountProvidersView(GenericAPIView):
             ]
 
         return Response(sorted(resp, key=lambda p: p["name"]))
-    
-
-# Di views.py atau API views
-from django.contrib.auth.decorators import user_passes_test
-from rest_framework.permissions import BasePermission
-
-class IsSuperUserPermission(BasePermission):
-    def has_permission(self, request, view):
-        return request.user.is_authenticated and request.user.is_superuser
-
-# Atau untuk function-based views
-@user_passes_test(lambda user: user.is_superuser)
-def download_document(request, document_id):
-    # Logic untuk download
-    pass
-
-@user_passes_test(lambda user: user.is_superuser)
-def view_document(request, document_id):
-    # Logic untuk view
-    pass
