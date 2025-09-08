@@ -216,3 +216,20 @@ class ApplicationConfigurationSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationConfiguration
         fields = "__all__"
+
+# Di serializers.py
+class DocumentSerializer(serializers.ModelSerializer):
+    can_view = serializers.SerializerMethodField()
+    can_download = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Document
+        fields = ['id', 'title', 'content', 'can_view', 'can_download']
+    
+    def get_can_view(self, obj):
+        request = self.context.get('request')
+        return request.user.is_superuser if request else False
+    
+    def get_can_download(self, obj):
+        request = self.context.get('request')
+        return request.user.is_superuser if request else False

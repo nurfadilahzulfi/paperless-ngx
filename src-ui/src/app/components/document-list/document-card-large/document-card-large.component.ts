@@ -66,7 +66,7 @@ export class DocumentCardLargeComponent
   implements AfterViewInit
 {
   private documentService = inject(DocumentService)
-  settingsService = inject(SettingsService)
+ settingsService = inject(SettingsService)
 
   DisplayField = DisplayField
 
@@ -86,12 +86,25 @@ export class DocumentCardLargeComponent
       })
   }
 
+  ngOnInit(): void {
+  console.log('Current user:', this.settingsService.currentUser);
+}
+
   getDownloadUrl() {
     return this.documentService.getDownloadUrl(this.document.id)
   }
 
-  // ✅ Tambahan fungsi cek superuser
-  isCurrentUserSuperuser(): boolean {
+ isCurrentUserSuperuser(): boolean {
     return this.settingsService.currentUser?.is_superuser === true
+  }
+
+  /** ✅ Helper: apakah tombol harus disabled */
+  isButtonDisabled(): boolean {
+    return !this.isCurrentUserSuperuser()
+  }
+
+  /** ✅ Helper: URL download (null kalau user biasa) */
+  getSafeDownloadUrl(): string | null {
+    return this.isCurrentUserSuperuser() ? this.getDownloadUrl() : null
   }
 }

@@ -107,6 +107,10 @@ export class DocumentCardSmallComponent
         this.show = true
       })
   }
+  ngOnInit(): void {
+  console.log('Current user:', this.settingsService.currentUser);
+}
+
 
   getIsThumbInverted() {
     return this.settingsService.get(SETTINGS_KEYS.DARK_MODE_THUMB_INVERTED)

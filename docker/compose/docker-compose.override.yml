@@ -1,0 +1,22 @@
+version: "3.4"
+
+services:
+  webserver:
+    build:
+      context: ../../   # arahkan ke root repo hasil clone
+    volumes:
+      - ../../src:/usr/src/paperless/src        # backend Django
+      - ../../src-ui:/usr/src/paperless/src-ui  # frontend Angular
+    environment:
+      - PAPERLESS_DEV=true
+    command: >
+      bash -c "
+      cd /usr/src/paperless/src &&
+      python3 manage.py runserver 0.0.0.0:8000 &
+      cd /usr/src/paperless/src-ui &&
+      npm install &&
+      npm run start
+      "
+    ports:
+      - "8000:8000"   # Django backend
+      - "4200:4200"   # Angular dev server

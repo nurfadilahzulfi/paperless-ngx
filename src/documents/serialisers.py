@@ -903,11 +903,15 @@ class DocumentSerializer(
     OwnedObjectSerializer,
     NestedUpdateMixin,
     DynamicFieldsModelSerializer,
+    ModelSerializer,
 ):
     correspondent = CorrespondentField(allow_null=True)
     tags = TagsField(many=True)
     document_type = DocumentTypeField(allow_null=True)
     storage_path = StoragePathField(allow_null=True)
+
+    can_view = SerializerMethodField()
+    can_download = SerializerMethodField()
 
     original_file_name = SerializerMethodField()
     archived_file_name = SerializerMethodField()
@@ -1080,6 +1084,8 @@ class DocumentSerializer(
         fields = (
             "id",
             "correspondent",
+            "can_download",
+            "can_view",
             "document_type",
             "storage_path",
             "title",
@@ -1105,6 +1111,17 @@ class DocumentSerializer(
             "mime_type",
         )
         list_serializer_class = OwnedObjectListSerializer
+    def get_can_view(self, obj):
+        request = self.context.get('request')
+        if request and request.user:
+            return request.user.is_superuser
+        return False
+    
+    def get_can_download(self, obj):
+        request = self.context.get('request')  
+        if request and request.user:
+            return request.user.is_superuser
+        return False
 
 
 class SearchResultListSerializer(serializers.ListSerializer):

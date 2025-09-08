@@ -304,9 +304,16 @@
                     @if (activeDisplayFields.includes(DisplayField.TITLE)) {
                       <div class="d-inline-block hidden" (mouseleave)="popupPreview.close()">
                         <a routerLink="/documents/{{d.id}}" title="Edit document" i18n-title style="overflow-wrap: anywhere;">{{d.title | documentTitle}}</a>
-                        <pngx-preview-popup *pngxIfPermissions="{ action: PermissionAction.View, type: PermissionType.Document }" [document]="d"  linkClasses="btn btn-sm btn-link text-secondary" linkTitle="Preview document" (click)="$event.stopPropagation()" i18n-linkTitle #popupPreview>
+                        <pngx-preview-popup
+                          *ngIf="currentUser?.is_superuser"
+                          [document]="d"
+                          linkClasses="btn btn-sm btn-link text-secondary"
+                          linkTitle="Preview document"
+                          (click)="$event.stopPropagation()"
+                          i18n-linkTitle
+                          #popupPreview>
                           <i-bs name="eye"></i-bs>
-                        </pngx-preview-popup>
+                      </pngx-preview-popup>
                       </div>
                     }
                     @if (activeDisplayFields.includes(DisplayField.TAGS)) {

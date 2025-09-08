@@ -561,6 +561,7 @@ class DocumentViewSet(
     DestroyModelMixin,
     ListModelMixin,
     GenericViewSet,
+    ModelViewSet,
 ):
     model = Document
     queryset = Document.objects.annotate(num_notes=Count("notes"))
@@ -600,7 +601,7 @@ class DocumentViewSet(
             .prefetch_related("tags", "custom_fields", "notes")
         )
 
-    # 🔹 Blokir preview untuk non-superuser
+     # 🔒 Preview hanya untuk superuser
     @action(methods=["get"], detail=True, filter_backends=[])
     @method_decorator(cache_control(no_cache=True))
     @method_decorator(
@@ -614,7 +615,7 @@ class DocumentViewSet(
         except (FileNotFoundError, Document.DoesNotExist):
             raise Http404
 
-    # 🔹 Blokir download untuk non-superuser
+    # 🔒 Download hanya untuk superuser
     @action(methods=["get"], detail=True)
     def download(self, request, pk=None):
         if not request.user.is_superuser:
@@ -624,7 +625,7 @@ class DocumentViewSet(
         except (FileNotFoundError, Document.DoesNotExist):
             raise Http404
 
-    # 🔹 Tambahan check di file_response
+    # 🔒 file_response juga superuser-only
     def file_response(self, pk, request, disposition):
         doc = Document.global_objects.select_related("owner").get(id=pk)
         if not request.user.is_superuser:
@@ -635,6 +636,7 @@ class DocumentViewSet(
             and doc.has_archive_version,
             disposition=disposition,
         )
+
     filter_backends = (
         DjangoFilterBackend,
         SearchFilter,
